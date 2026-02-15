@@ -162,12 +162,17 @@ class GeminiOCRService:
             5. Use actual symbols for Math/Science notation.
             6. Return ONLY the JSON object. No other text."""
             
-            # Using JSON mode if supported or just standard generation
+            # Using JSON mode if supported
             try:
-                response = self.model.generate_content(
-                    [prompt, image],
-                    generation_config={"response_mime_type": "application/json"}
-                )
+                try:
+                    response = self.model.generate_content(
+                        [prompt, image],
+                        generation_config={"response_mime_type": "application/json"}
+                    )
+                except Exception as config_err:
+                    # Fallback if response_mime_type is not supported
+                    print(f"⚠️ JSON mode not supported: {config_err}. Falling back to standard text.")
+                    response = self.model.generate_content([prompt, image])
                 
                 if not response or not response.text:
                     return {
@@ -178,8 +183,16 @@ class GeminiOCRService:
                     }
 
                 import json
+                text = response.text
+                
+                # Cleanup text if not in JSON-only mode (remove markdown blocks)
+                if "```json" in text:
+                    text = text.split("```json")[1].split("```")[0].strip()
+                elif "```" in text:
+                    text = text.split("```")[1].split("```")[0].strip()
+                
                 try:
-                    result = json.loads(response.text)
+                    result = json.loads(text)
                     return {
                         'transcription': result.get('transcription', ''),
                         'diagrams': result.get('diagrams', []),
@@ -190,7 +203,7 @@ class GeminiOCRService:
                         'transcription': "Failed to parse AI response as JSON.",
                         'diagrams': [],
                         'success': False,
-                        'error': f"JSON Decode Error: {response.text[:100]}"
+                        'error': f"JSON Decode Error: {text[:100]}"
                     }
             except Exception as e:
                 # Handle safety filters or blocked responses
