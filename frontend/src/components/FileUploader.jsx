@@ -46,10 +46,14 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             return response;
         },
         error => {
+            // DEEP LOGGING for v2.7: log the full error JSON
+            const errorJson = error.toJSON ? JSON.stringify(error.toJSON()) : 'No JSON detail';
+            addLog(`❌ Detailed Error: ${errorJson}`, 'error');
+
             const errorDetail = error.response
                 ? `Status ${error.response.status}: ${JSON.stringify(error.response.data)}`
                 : error.message;
-            addLog(`❌ Error: ${errorDetail}`, 'error');
+            addLog(`❌ User Error: ${errorDetail}`, 'error');
             return Promise.reject(error);
         }
     );
@@ -57,18 +61,21 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
     const testConnection = async () => {
         setTesting(true);
         const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
+        // Ping preflight first in v2.7
         const testUrl = `${baseUrl}test-connection`;
 
         addLog(`🧪 Testing connection to: ${testUrl}`, 'info');
 
         try {
-            const response = await axios.get(testUrl, { timeout: 10000 });
-            addLog(`✅ Connection Success: ${response.data.message}`, 'success');
+            const response = await axios.get(testUrl, { timeout: 15000 });
+            addLog(`✅ Connection Success: ${JSON.stringify(response.data)}`, 'success');
             alert(`✅ Connection Success!\nTarget: ${testUrl}\nResponse: ${response.data.message}`);
         } catch (error) {
+            const errorJson = error.toJSON ? JSON.stringify(error.toJSON()) : 'No JSON detail';
+            addLog(`❌ Connection Failed JSON: ${errorJson}`, 'error');
             addLog(`❌ Connection Failed: ${error.message}`, 'error');
             console.error('Connection test failed:', error);
-            alert(`❌ Connection Failed!\nAttempted URL: ${testUrl}\nError: ${error.message}\n${error.response ? `Status: ${error.response.status}` : 'Check if the backend URL is correct.'}`);
+            alert(`❌ Connection Failed!\nAttempted URL: ${testUrl}\nError: ${error.message}\nCheck logs for deep detail.`);
         } finally {
             setTesting(false);
         }
@@ -166,14 +173,16 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             alert('File uploaded successfully!');
             if (onUploadSuccess) onUploadSuccess(responseData);
         } catch (error) {
-            addLog(`❌ Upload failed: ${error.message}`, 'error');
+            const errorJson = error.toJSON ? JSON.stringify(error.toJSON()) : 'No detail';
+            addLog(`❌ Deep Upload Failure: ${errorJson}`, 'error');
+
             console.error('Upload failed:', error);
             const status = error.response?.status;
             let errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
             if (error.message === 'Network Error') {
                 const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
-                errorMessage = `Network Error (Blocked or Unreachable). Check Debug Logs.`;
+                errorMessage = `Network Error. Check logs for browser error codes.`;
             }
 
             const targetUrl = error.config ? `\nTarget: ${error.config.baseURL || ''}${error.config.url}` : '';
@@ -210,7 +219,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                         disabled={testing}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 transition-all"
                     >
-                        {testing ? 'Testing...' : 'Test Connection'}
+                        {testing ? 'Waking backend...' : 'Test Connection'}
                     </button>
 
                     {DIRECT_RENDER_URL && (
@@ -232,7 +241,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             {showDebug && (
                 <div className="bg-black/80 rounded-lg p-3 font-mono text-[10px] border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-1">
-                        <span className="text-indigo-400 font-bold uppercase tracking-wider">Debug Console</span>
+                        <span className="text-indigo-400 font-bold uppercase tracking-wider">Debug Console v2.7</span>
                         <button onClick={clearLogs} className="text-gray-500 hover:text-red-400 transition-colors">
                             <Trash2 size={12} />
                         </button>
@@ -248,7 +257,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                                         log.type === 'error' ? 'text-red-400' :
                                             log.type === 'success' ? 'text-green-400' :
                                                 'text-gray-300'
-                                    }>
+                                    } style={{ wordBreak: 'break-all' }}>
                                         {log.message}
                                     </span>
                                 </div>

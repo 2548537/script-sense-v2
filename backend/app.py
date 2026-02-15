@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from config import Config
 from models import db
@@ -16,13 +16,9 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    # Aggressive CORS for production diagnostics
-    CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": "*", "methods": "*"}})
+    # Standard robust CORS for production
+    CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
     
-    # Register blueprints
-    app.register_blueprint(upload_bp, url_prefix='/api/upload')
-    app.register_blueprint(evaluation_bp, url_prefix='/api/evaluate')
-
     @app.route('/api/test-connection', methods=['GET', 'POST', 'OPTIONS'])
     def test_connection():
         """Fast endpoint to verify CORS and connectivity without file overhead"""
@@ -32,18 +28,14 @@ def create_app():
             'timestamp': datetime.utcnow().isoformat()
         }), 200
 
-    @app.after_request
-    def after_request(response):
-        """Manually inject CORS headers for extra robustness"""
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        
-        # Explicitly handle preflight
-        if request.method == 'OPTIONS':
-            return response
-            
-        return response
+    @app.route('/api/preflight', methods=['OPTIONS'])
+    def preflight():
+        """Explicit preflight handler for testing"""
+        return '', 204
+    
+    # Register blueprints
+    app.register_blueprint(upload_bp, url_prefix='/api/upload')
+    app.register_blueprint(evaluation_bp, url_prefix='/api/evaluate')
     
     # Create database tables
     with app.app_context():
