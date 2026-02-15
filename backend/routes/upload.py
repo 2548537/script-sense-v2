@@ -39,9 +39,12 @@ def upload_question_paper():
         filepath = os.path.join(Config.UPLOAD_FOLDER, 'question_papers', filename)
         file.save(filepath)
         
-        # Generate thumbnail
+        # Generate thumbnail (non-critical)
         thumbnail_path = os.path.join(Config.UPLOAD_FOLDER, 'thumbnails', f"thumb_{filename}.png")
-        PDFProcessor.generate_thumbnail(filepath, thumbnail_path)
+        try:
+            PDFProcessor.generate_thumbnail(filepath, thumbnail_path)
+        except Exception as e:
+            print(f"Thumbnail generation skipped: {e}")
         
         # Create database entry
         question_paper = QuestionPaper(
