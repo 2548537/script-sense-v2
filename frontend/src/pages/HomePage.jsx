@@ -50,7 +50,10 @@ const HomePage = () => {
                         <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold gradient-text">ScriptSense</h1>
+                        <h1 className="text-3xl md:text-4xl font-bold gradient-text flex items-center gap-2">
+                            ScriptSense
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400 border border-primary-500/30">v2.1</span>
+                        </h1>
                         <p className="text-gray-400 text-base md:text-lg">AI-Powered Handwriting Recognition & Grading</p>
                     </div>
                 </div>

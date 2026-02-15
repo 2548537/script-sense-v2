@@ -24,6 +24,8 @@ const getApiBaseUrl = () => {
 const API_BASE_URL = getApiBaseUrl();
 
 console.log("🚀 ScriptSense Final API URL:", API_BASE_URL);
+console.log("🌍 Environment:", import.meta.env.MODE);
+console.log("📡 Production API defined:", !!import.meta.env.VITE_API_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
