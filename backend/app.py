@@ -4,6 +4,7 @@ from config import Config
 from models import db
 from routes.upload import upload_bp
 from routes.evaluation import evaluation_bp
+from datetime import datetime
 
 def create_app():
     """Create and configure Flask application"""
@@ -15,12 +16,21 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    # Completely open CORS for production testing
-    CORS(app)
+    # Aggressive CORS for production diagnostics
+    CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": "*", "methods": "*"}})
     
     # Register blueprints
     app.register_blueprint(upload_bp, url_prefix='/api/upload')
     app.register_blueprint(evaluation_bp, url_prefix='/api/evaluate')
+
+    @app.route('/api/test-connection', methods=['POST', 'OPTIONS'])
+    def test_connection():
+        """Fast endpoint to verify CORS and connectivity without file overhead"""
+        return jsonify({
+            'status': 'connected',
+            'message': 'Backend is reachable and CORS is working!',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
     
     # Create database tables
     with app.app_context():

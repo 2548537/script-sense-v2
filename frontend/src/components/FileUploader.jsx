@@ -10,7 +10,24 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
     const [studentName, setStudentName] = useState('');
     const [totalQuestions, setTotalQuestions] = useState(1);
     const [uploading, setUploading] = useState(false);
+    const [testing, setTesting] = useState(false);
     const [useDirectMode, setUseDirectMode] = useState(false);
+
+    const testConnection = async () => {
+        setTesting(true);
+        const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
+        const testUrl = `${baseUrl}test-connection`;
+
+        try {
+            const response = await axios.post(testUrl, {}, { timeout: 10000 });
+            alert(`✅ Connection Success!\nTarget: ${testUrl}\nResponse: ${response.data.message}`);
+        } catch (error) {
+            console.error('Connection test failed:', error);
+            alert(`❌ Connection Failed!\nAttempted URL: ${testUrl}\nError: ${error.message}\n${error.response ? `Status: ${error.response.status}` : 'Check if the backend URL is correct in Vercel settings.'}`);
+        } finally {
+            setTesting(false);
+        }
+    };
 
     const handleDrag = useCallback((e) => {
         e.preventDefault();
@@ -105,10 +122,11 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             let errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
             if (error.message === 'Network Error') {
+                const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
                 const isProduction = !useDirectMode && DIRECT_RENDER_URL;
                 errorMessage = isProduction
-                    ? 'Network Error: Vercel might be blocking this large upload. Try switching to "Direct Mode" below.'
-                    : 'Network Error: The backend is unreachable. Check your connection.';
+                    ? `Network Error: Vercel might be blocking this large upload to ${baseUrl}. Try switching to "Direct Mode" below.`
+                    : `Network Error: The backend at ${baseUrl} is unreachable. Check your connection.`;
             }
 
             const targetUrl = error.config ? `\nTarget: ${error.config.baseURL || ''}${error.config.url}` : '';
@@ -129,19 +147,29 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                     {type === 'question' ? 'Question Paper' : type === 'answer' ? 'Answer Sheet' : 'Evaluation Rubric'}
                 </h3>
 
-                {DIRECT_RENDER_URL && (
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setUseDirectMode(!useDirectMode)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${useDirectMode
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
-                            }`}
-                        title={useDirectMode ? "Talking directly to Render (Bypassing Vercel)" : "Talking to Vercel Proxy"}
+                        onClick={testConnection}
+                        disabled={testing}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 transition-all"
                     >
-                        {useDirectMode ? <Zap size={14} /> : <Globe size={14} />}
-                        {useDirectMode ? 'Direct Mode ON' : 'Proxy Mode'}
+                        {testing ? 'Testing...' : 'Test Connection'}
                     </button>
-                )}
+
+                    {DIRECT_RENDER_URL && (
+                        <button
+                            onClick={() => setUseDirectMode(!useDirectMode)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${useDirectMode
+                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                    : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+                                }`}
+                            title={useDirectMode ? "Talking directly to Render (Bypassing Vercel)" : "Talking to Vercel Proxy"}
+                        >
+                            {useDirectMode ? <Zap size={14} /> : <Globe size={14} />}
+                            {useDirectMode ? 'Direct Mode ON' : 'Proxy Mode'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div

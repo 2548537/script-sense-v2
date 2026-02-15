@@ -13,6 +13,7 @@ export const DIRECT_RENDER_URL = import.meta.env.VITE_API_URL
 const API_BASE_URL = getApiBaseUrl();
 
 console.log("🚀 ScriptSense Final API URL:", API_BASE_URL);
+console.log("🔗 Direct Render URL:", DIRECT_RENDER_URL);
 console.log("🌍 Environment:", import.meta.env.MODE);
 console.log("📡 Production API defined:", !!import.meta.env.VITE_API_URL);
 
