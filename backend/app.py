@@ -17,16 +17,26 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     # Standard robust CORS for production
-    CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, supports_credentials=True, resources={
+        r"/api/*": {
+            "origins": "*",
+            "allow_headers": ["Content-Type", "Authorization"],
+            "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
+        }
+    })
     
     @app.route('/api/test-connection', methods=['GET', 'POST', 'OPTIONS'])
     def test_connection():
         """Fast endpoint to verify CORS and connectivity without file overhead"""
-        return jsonify({
+        response = jsonify({
             'status': 'connected',
             'message': 'Backend is reachable and CORS is working!',
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
+            'timestamp': datetime.utcnow().isoformat(),
+            'server_identity': 'scriptsense-python-backend'
+        })
+        # Add custom identity header for frontend verification
+        response.headers['X-ScriptSense-Server'] = 'scriptsense-python-backend'
+        return response, 200
 
     @app.route('/api/preflight', methods=['OPTIONS'])
     def preflight():

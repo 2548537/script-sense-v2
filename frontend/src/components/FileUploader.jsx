@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Upload, X, FileText, Globe, Zap, Terminal, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Upload, X, FileText, Globe, Zap, Terminal, ChevronDown, ChevronUp, Trash2, ShieldAlert } from 'lucide-react';
 import { uploadQuestionPaper, uploadAnswerSheet, uploadRubric, DIRECT_RENDER_URL } from '../services/api';
 import axios from 'axios';
 
@@ -29,14 +29,21 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
         }
     }, [debugLogs]);
 
-    // Create a dedicated Axios instance for Direct Mode that logs everything
+    // Dedicated Axios instance for Direct Mode (v2.8: Force XHR adapter and Headers)
     const directAxios = axios.create({
         baseURL: DIRECT_RENDER_URL,
-        timeout: 120000
+        timeout: 120000,
+        // Force traditional XHR adapter as some mobile browsers' Fetch implementation 
+        // handles FormData/CORS preflights poorly
+        adapter: 'xhr'
     });
 
     directAxios.interceptors.request.use(config => {
         addLog(`📡 Request: ${config.method?.toUpperCase()} ${config.url}`, 'info');
+        // Force correct multipart header for mobile
+        if (config.data instanceof FormData) {
+            addLog(`🛠 Enforcing multipart/form-data headers`, 'info');
+        }
         return config;
     });
 
@@ -46,7 +53,6 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             return response;
         },
         error => {
-            // DEEP LOGGING for v2.7: log the full error JSON
             const errorJson = error.toJSON ? JSON.stringify(error.toJSON()) : 'No JSON detail';
             addLog(`❌ Detailed Error: ${errorJson}`, 'error');
 
@@ -61,21 +67,39 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
     const testConnection = async () => {
         setTesting(true);
         const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
-        // Ping preflight first in v2.7
         const testUrl = `${baseUrl}test-connection`;
 
         addLog(`🧪 Testing connection to: ${testUrl}`, 'info');
 
         try {
-            const response = await axios.get(testUrl, { timeout: 15000 });
-            addLog(`✅ Connection Success: ${JSON.stringify(response.data)}`, 'success');
-            alert(`✅ Connection Success!\nTarget: ${testUrl}\nResponse: ${response.data.message}`);
+            const response = await axios.get(testUrl, {
+                timeout: 15000,
+                adapter: 'xhr' // Using XHR here too for consistency
+            });
+
+            // v2.8 Identity Check
+            const identityHeader = response.headers['x-scriptsense-server'];
+            const identityBody = response.data?.server_identity;
+            const isJson = typeof response.data === 'object';
+
+            addLog(`📝 Response Type: ${typeof response.data}`, 'info');
+            addLog(`🆔 Identity Header: ${identityHeader}`, 'info');
+
+            if (!isJson) {
+                addLog(`⚠️ CRITICAL: Response is not JSON! You are likely hitting a website, not the API.`, 'error');
+                alert(`🛑 CRITICAL CONFIG ERROR!\nTarget: ${testUrl}\n\nProblem: The server returned a webpage instead of an API response.\n\nAction: Check your Render deployment settings. Ensure it is running the Python backend.`);
+            } else if (identityHeader !== 'scriptsense-python-backend' && identityBody !== 'scriptsense-python-backend') {
+                addLog(`⚠️ WARNING: Identity mismatch. Unknown backend.`, 'error');
+                alert(`⚠️ Backend Mismatch!\nResponse: ${JSON.stringify(response.data)}\nCheck if your RENDER_URL is correct.`);
+            } else {
+                addLog(`✅ Backend Verified: ${identityBody || 'scriptsense-python'}`, 'success');
+                alert(`✅ Backend Verified Successfully!\nMode: ${useDirectMode ? 'Direct' : 'Proxy'}\nReady for upload.`);
+            }
         } catch (error) {
             const errorJson = error.toJSON ? JSON.stringify(error.toJSON()) : 'No JSON detail';
             addLog(`❌ Connection Failed JSON: ${errorJson}`, 'error');
             addLog(`❌ Connection Failed: ${error.message}`, 'error');
-            console.error('Connection test failed:', error);
-            alert(`❌ Connection Failed!\nAttempted URL: ${testUrl}\nError: ${error.message}\nCheck logs for deep detail.`);
+            alert(`❌ Connection Failed!\nError: ${error.message}\nCheck logs for details.`);
         } finally {
             setTesting(false);
         }
@@ -151,8 +175,12 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                     endpoint = 'upload/rubric';
                 }
 
+                // v2.8: Use the customized directAxios
                 const response = await directAxios.post(endpoint, formData, {
-                    onUploadProgress: onProgress
+                    onUploadProgress: onProgress,
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
                 });
                 responseData = response.data;
             } else {
@@ -181,7 +209,6 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             let errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
             if (error.message === 'Network Error') {
-                const baseUrl = useDirectMode ? DIRECT_RENDER_URL : '/api/';
                 errorMessage = `Network Error. Check logs for browser error codes.`;
             }
 
@@ -219,7 +246,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                         disabled={testing}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 transition-all"
                     >
-                        {testing ? 'Waking backend...' : 'Test Connection'}
+                        {testing ? 'Verifying...' : 'Test Connection'}
                     </button>
 
                     {DIRECT_RENDER_URL && (
@@ -241,7 +268,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
             {showDebug && (
                 <div className="bg-black/80 rounded-lg p-3 font-mono text-[10px] border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-1">
-                        <span className="text-indigo-400 font-bold uppercase tracking-wider">Debug Console v2.7</span>
+                        <span className="text-indigo-400 font-bold uppercase tracking-wider">Debug Console v2.8</span>
                         <button onClick={clearLogs} className="text-gray-500 hover:text-red-400 transition-colors">
                             <Trash2 size={12} />
                         </button>
