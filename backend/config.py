@@ -1,0 +1,34 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    """Application configuration"""
+    
+    # Database
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///evaluation.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # File Upload
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
+    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 52428800))  # 50MB default
+    ALLOWED_EXTENSIONS = {'pdf'}
+    
+    # Gemini API
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    
+    # Security
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    
+    # CORS
+    CORS_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
+    
+    @staticmethod
+    def init_app(app):
+        """Initialize application configuration"""
+        # Create upload directories
+        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'question_papers'), exist_ok=True)
+        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'answer_sheets'), exist_ok=True)
+        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'rubrics'), exist_ok=True)
+        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'thumbnails'), exist_ok=True)

@@ -1,0 +1,132 @@
+import React, { useState, useEffect } from 'react';
+import { GraduationCap, RefreshCw } from 'lucide-react';
+import FileUploader from '../components/FileUploader';
+import FileGrid from '../components/FileGrid';
+import { uploadQuestionPaper, uploadAnswerSheet, uploadRubric, getFiles } from '../services/api';
+
+const HomePage = () => {
+    const [files, setFiles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
+
+    const loadFiles = async () => {
+        try {
+            setLoading(true);
+            const data = await getFiles(filter);
+            setFiles(data.files || []);
+        } catch (error) {
+            console.error('Failed to load files:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFiles();
+    }, [filter]);
+
+    const handleUploadQuestionPaper = async (file, metadata) => {
+        await uploadQuestionPaper(file, metadata.title, metadata.totalQuestions);
+        loadFiles();
+    };
+
+    const handleUploadAnswerSheet = async (file, metadata) => {
+        await uploadAnswerSheet(file, metadata.studentName);
+        loadFiles();
+    };
+
+    const handleUploadRubric = async (file, metadata) => {
+        await uploadRubric(file, metadata.title);
+        loadFiles();
+    };
+
+    return (
+        <div className="min-h-screen p-8">
+            {/* Header */}
+            <header className="mb-12">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="p-4 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl pulse-glow">
+                        <GraduationCap className="w-10 h-10 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-4xl font-bold gradient-text">ScriptSense</h1>
+                        <p className="text-gray-400 text-lg">AI-Powered Handwriting Recognition & Grading</p>
+                    </div>
+                </div>
+
+                <a href="/results" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-all border border-white border-opacity-10">
+                    <span className="font-semibold">View Results Library</span>
+                </a>
+            </header>
+
+            {/* Upload Section */}
+            <section className="mb-12">
+                <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
+                    <span className="gradient-text">Upload Documents</span>
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FileUploader
+                        type="question"
+                        title="Question Papers"
+                        onUpload={handleUploadQuestionPaper}
+                    />
+                    <FileUploader
+                        type="answer"
+                        title="Answer Sheets"
+                        onUpload={handleUploadAnswerSheet}
+                    />
+                    <FileUploader
+                        type="rubric"
+                        title="Evaluation Rubrics"
+                        onUpload={handleUploadRubric}
+                    />
+                </div>
+            </section>
+
+            {/* Files Section */}
+            <section>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-semibold gradient-text">Uploaded Files</h2>
+
+                    <div className="flex items-center gap-4">
+                        {/* Filter */}
+                        <div className="flex gap-2 glass px-3 py-2 rounded-lg">
+                            {['all', 'question', 'answer', 'rubric'].map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filter === f
+                                        ? 'bg-primary-500 text-white'
+                                        : 'hover:bg-white hover:bg-opacity-10'
+                                        }`}
+                                >
+                                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Refresh */}
+                        <button
+                            onClick={loadFiles}
+                            className="btn btn-ghost p-3"
+                            disabled={loading}
+                        >
+                            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="spinner"></div>
+                    </div>
+                ) : (
+                    <FileGrid files={files} onRefresh={loadFiles} />
+                )}
+            </section>
+        </div>
+    );
+};
+
+export default HomePage;
