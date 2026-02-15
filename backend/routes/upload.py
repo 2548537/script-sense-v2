@@ -92,10 +92,17 @@ def upload_answer_sheet():
         PDFProcessor.generate_thumbnail(filepath, thumbnail_path)
         
         # Create database entry
+        final_qp_id = None
+        if question_paper_id and str(question_paper_id).lower() not in ['undefined', 'null', '']:
+            try:
+                final_qp_id = int(question_paper_id)
+            except:
+                pass
+
         answer_sheet = AnswerSheet(
             student_name=student_name or 'Unknown Student',
             file_path=filepath,
-            question_paper_id=int(question_paper_id) if question_paper_id else None
+            question_paper_id=final_qp_id
         )
         db.session.add(answer_sheet)
         db.session.commit()
@@ -107,6 +114,7 @@ def upload_answer_sheet():
         
     except Exception as e:
         db.session.rollback()
+        print(f"Upload Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @upload_bp.route('/rubric', methods=['POST'])
