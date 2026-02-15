@@ -15,7 +15,8 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}})
+    # Broaden CORS for easier multi-device testing (Security relaxed for debugging)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     # Register blueprints
     app.register_blueprint(upload_bp, url_prefix='/api/upload')

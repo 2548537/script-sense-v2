@@ -1,8 +1,24 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const getApiBaseUrl = () => {
+    // 1. Check if an explicit API URL is provided (Vercel/Production)
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
-console.log("🚀 ScriptSense API Base URL:", API_BASE_URL);
+    // 2. Handle Local / Network access
+    const { hostname, protocol } = window.location;
+
+    // If we are on a local machine or network IP, use port 5000 on the same machine
+    if (hostname === 'localhost' || hostname.match(/^127\.|^192\.|^172\.|^10\./)) {
+        return `${protocol}//${hostname}:5000/api`;
+    }
+
+    // 3. Fallback to localhost if no other cues are available
+    return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log("🚀 ScriptSense Final API URL:", API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
