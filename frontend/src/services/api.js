@@ -2,23 +2,27 @@ import axios from 'axios';
 
 const getApiBaseUrl = () => {
     // 1. Explicit API URL (Production/Deployment)
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    let url = import.meta.env.VITE_API_URL || '';
 
-    const { hostname, protocol, port } = window.location;
+    if (!url) {
+        const { hostname, protocol } = window.location;
 
-    // 2. Localhost Development
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return '/api'; // Use Vite proxy
+        // 2. Localhost Development
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            url = '/api'; // Use Vite proxy
+        }
+        // 3. Network Access (Mobile) - Use direct backend IP
+        else if (hostname.match(/^10\.|^192\.|^172\./)) {
+            url = `${protocol}//${hostname}:5000/api`;
+        }
+        // 4. Default Fallback
+        else {
+            url = '/api';
+        }
     }
 
-    // 3. Network Access (Mobile) - Use direct backend IP if possible
-    // This bypasses the Vite proxy which can sometimes be unstable for large uploads on mobile
-    if (hostname.match(/^10\.|^192\.|^172\./)) {
-        return `${protocol}//${hostname}:5000/api`;
-    }
-
-    // 4. Default Fallback
-    return '/api';
+    // Ensure trailing slash for Axios consistency
+    return url.endsWith('/') ? url : `${url}/`;
 };
 
 const API_BASE_URL = getApiBaseUrl();
