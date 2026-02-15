@@ -23,7 +23,7 @@ def create_app():
     app.register_blueprint(upload_bp, url_prefix='/api/upload')
     app.register_blueprint(evaluation_bp, url_prefix='/api/evaluate')
 
-    @app.route('/api/test-connection', methods=['POST', 'OPTIONS'])
+    @app.route('/api/test-connection', methods=['GET', 'POST', 'OPTIONS'])
     def test_connection():
         """Fast endpoint to verify CORS and connectivity without file overhead"""
         return jsonify({

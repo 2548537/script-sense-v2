@@ -19,7 +19,7 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
         const testUrl = `${baseUrl}test-connection`;
 
         try {
-            const response = await axios.post(testUrl, {}, { timeout: 10000 });
+            const response = await axios.get(testUrl, { timeout: 10000 });
             alert(`✅ Connection Success!\nTarget: ${testUrl}\nResponse: ${response.data.message}`);
         } catch (error) {
             console.error('Connection test failed:', error);
@@ -160,8 +160,8 @@ const FileUploader = ({ type, onUploadSuccess, questionPaperId }) => {
                         <button
                             onClick={() => setUseDirectMode(!useDirectMode)}
                             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${useDirectMode
-                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                    : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
                                 }`}
                             title={useDirectMode ? "Talking directly to Render (Bypassing Vercel)" : "Talking to Vercel Proxy"}
                         >
