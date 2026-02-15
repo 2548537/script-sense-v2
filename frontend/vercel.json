@@ -2,6 +2,10 @@
     "rewriteConfigs": true,
     "rewrites": [
         {
+            "source": "/api/:path*",
+            "destination": "https://scriptsense-g4sf.onrender.com/api/:path*"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

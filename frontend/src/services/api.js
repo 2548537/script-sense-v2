@@ -1,33 +1,9 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-    // 1. Explicit API URL (Production/Deployment)
-    let url = import.meta.env.VITE_API_URL || '';
-
-    if (url) {
-        // Ensure it ends with /api if not already there
-        if (!url.toLowerCase().includes('/api')) {
-            url = url.endsWith('/') ? `${url}api` : `${url}/api`;
-        }
-    } else {
-        const { hostname, protocol } = window.location;
-
-        // 2. Localhost Development
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            url = '/api'; // Use Vite proxy
-        }
-        // 3. Network Access (Mobile) - Use direct backend IP
-        else if (hostname.match(/^10\.|^192\.|^172\./)) {
-            url = `${protocol}//${hostname}:5000/api`;
-        }
-        // 4. Default Fallback
-        else {
-            url = '/api';
-        }
-    }
-
-    // Ensure trailing slash for Axios consistency with relative paths (e.g. 'upload/...')
-    return url.endsWith('/') ? url : `${url}/`;
+    // We now use Vercel/Vite Proxies for everything
+    // This allows the browser to think it's talking to the same domain, bypassing CORS entirely
+    return '/api/';
 };
 
 const API_BASE_URL = getApiBaseUrl();
